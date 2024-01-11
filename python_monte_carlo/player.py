@@ -99,26 +99,43 @@ class Player(Bot):
            min_cost = min_raise - my_pip  # the cost of a minimum bet/raise
            max_cost = max_raise - my_pip  # the cost of a maximum bet/raise
 
-        if (self.strength_wo_auction + self.strength_w_auction) / 2 >= 0.75:
-            if BidAction in legal_actions:
-                return BidAction(my_stack)
-            if RaiseAction in legal_actions:
-                return RaiseAction(max_raise)
-            if CheckAction in legal_actions:
-                return CheckAction()
-            return CallAction()
-        else:
-            if BidAction in legal_actions:
-                return BidAction(2)
-            elif CheckAction in legal_actions:
-                return CheckAction()
-            return FoldAction()
+        won_auction = None
+        if len(my_cards) == 3:
+            won_auction = True
+        if len(my_cards) == 2 and street >= 3 and not BidAction in legal_actions:
+            won_auction = False
+        strength_w_auction, strength_wo_auction = self.calculate_strength(my_cards, street, board_cards, won_auction)
+
+        if street == 0: # preflop
+            pass
+        elif street == 3: # flop
+            pass
+        elif street == 4: # turn
+            pass
+        else: # river
+            pass
+
+        # if (self.strength_wo_auction + self.strength_w_auction) / 2 >= 0.75:
+        #     if BidAction in legal_actions:
+        #         return BidAction(my_stack)
+        #     if RaiseAction in legal_actions:
+        #         return RaiseAction(max_raise)
+        #     if CheckAction in legal_actions:
+        #         return CheckAction()
+        #     return CallAction()
+        # else:
+        #     if BidAction in legal_actions:
+        #         return BidAction(2)
+        #     elif CheckAction in legal_actions:
+        #         return CheckAction()
+        #     return FoldAction()
 
 
     def calculate_strength(self, my_cards, street, board_cards, won_auction=None, iters=100):
         deck = eval7.Deck()
         my_cards = [eval7.Card(card) for card in my_cards]
-        for card in my_cards:
+        board_cards = [eval7.Card(card) for card in board_cards]
+        for card in my_cards + board_cards:
             deck.cards.remove(card)
         wins_w_auction = 0
         wins_wo_auction = 0
