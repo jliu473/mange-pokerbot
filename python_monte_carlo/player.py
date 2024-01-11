@@ -45,70 +45,7 @@ class Player(Bot):
         my_cards = round_state.hands[active]  # your cards
         big_blind = bool(active)  # True if you are the big blind
         print("new round")
-
-        monte_carlo_iters = 100
-        strength_w_auction, strength_wo_auction = self.calculate_strength(my_cards, monte_carlo_iters)
-        self.strength_w_auction = strength_w_auction
-        self.strength_wo_auction = strength_wo_auction
-        
-    def calculate_strength(self, my_cards, iters):
-        deck = eval7.Deck()
-        my_cards = [eval7.Card(card) for card in my_cards]
-        for card in my_cards:
-            deck.cards.remove(card)
-        wins_w_auction = 0
-        wins_wo_auction = 0
-
-        for _ in range(iters):
-            deck.shuffle()
-            opp = 3
-            community = 5
-            draw = deck.peek(opp+community)
-            opp_cards = draw[:opp]
-            community_cards = draw[opp:]
-
-            our_hand = my_cards + community_cards
-            opp_hand = opp_cards + community_cards
-
-            our_hand_val = eval7.evaluate(our_hand)
-            opp_hand_val = eval7.evaluate(opp_hand)
-
-            if our_hand_val > opp_hand_val:
-                # We won the round
-                wins_wo_auction += 2
-            if our_hand_val == opp_hand_val:
-                # We tied the round
-                wins_wo_auction += 1
-
-        for _ in range(iters):
-            deck.shuffle()
-            opp = 2
-            community = 5
-            auction = 1
-            draw = deck.peek(opp+community+auction)
-            opp_cards = draw[:opp]
-            community_cards = draw[opp: opp + community]
-            auction_card = draw[opp+community:]
-            our_hand = my_cards + auction_card + community_cards
-            opp_hand = opp_cards + community_cards
-
-            our_hand_val = eval7.evaluate(our_hand)
-            opp_hand_val = eval7.evaluate(opp_hand)
-
-            if our_hand_val > opp_hand_val:
-                # We won the round
-                wins_w_auction += 2
-            elif our_hand_val == opp_hand_val:
-                # we tied the round
-                wins_w_auction += 1
-            else:
-                #We tied the round
-                wins_w_auction += 0
-            
-            strength_w_auction = wins_w_auction / (2* iters)
-            strength_wo_auction = wins_wo_auction/ (2* iters)
-
-        return strength_w_auction, strength_wo_auction
+    
 
     def handle_round_over(self, game_state, terminal_state, active):
         """
@@ -162,7 +99,7 @@ class Player(Bot):
            min_cost = min_raise - my_pip  # the cost of a minimum bet/raise
            max_cost = max_raise - my_pip  # the cost of a maximum bet/raise
 
-        if (self.strength_wo_auction + self.strength_w_auction) / 2 >= 0.85:
+        if (self.strength_wo_auction + self.strength_w_auction) / 2 >= 0.75:
             if BidAction in legal_actions:
                 return BidAction(my_stack)
             if RaiseAction in legal_actions:
@@ -177,6 +114,107 @@ class Player(Bot):
                 return CheckAction()
             return FoldAction()
 
+
+    def calculate_strength(self, my_cards, street, board_cards, won_auction=None, iters=100):
+        deck = eval7.Deck()
+        my_cards = [eval7.Card(card) for card in my_cards]
+        for card in my_cards:
+            deck.cards.remove(card)
+        wins_w_auction = 0
+        wins_wo_auction = 0
+
+        if won_auction == None:
+            for _ in range(iters):
+                deck.shuffle()
+                opp = 3
+                community = 5 - street
+                draw = deck.peek(opp+community)
+                opp_cards = draw[:opp]
+                community_cards = board_cards + draw[opp:]
+
+                our_hand = my_cards + community_cards
+                opp_hand = opp_cards + community_cards
+
+                our_hand_val = eval7.evaluate(our_hand)
+                opp_hand_val = eval7.evaluate(opp_hand)
+
+                if our_hand_val > opp_hand_val:
+                    # We won the round
+                    wins_wo_auction += 2
+                if our_hand_val == opp_hand_val:
+                    # We tied the round
+                    wins_wo_auction += 1
+
+            for _ in range(iters):
+                deck.shuffle()
+                opp = 2
+                community = 5 - street
+                auction = 1
+                draw = deck.peek(opp+community+auction)
+                opp_cards = draw[:opp]
+                community_cards = board_cards + draw[opp: opp + community]
+                auction_card = draw[opp+community:]
+                our_hand = my_cards + auction_card + community_cards
+                opp_hand = opp_cards + community_cards
+
+                our_hand_val = eval7.evaluate(our_hand)
+                opp_hand_val = eval7.evaluate(opp_hand)
+
+                if our_hand_val > opp_hand_val:
+                    # We won the round
+                    wins_w_auction += 2
+                elif our_hand_val == opp_hand_val:
+                    # we tied the round
+                    wins_w_auction += 1
+        
+        else: 
+            if won_auction:
+                for _ in range(iters):
+                    deck.shuffle()
+                    opp = 2
+                    community = 5 - street
+                    draw = deck.peek(opp+community)
+                    opp_cards = draw[:opp]
+                    community_cards = board_cards + draw[opp: opp + community]
+                    our_hand = my_cards + community_cards
+                    opp_hand = opp_cards + community_cards
+
+                    our_hand_val = eval7.evaluate(our_hand)
+                    opp_hand_val = eval7.evaluate(opp_hand)
+
+                    if our_hand_val > opp_hand_val:
+                        # We won the round
+                        wins_w_auction += 2
+                    elif our_hand_val == opp_hand_val:
+                        # we tied the round
+                        wins_w_auction += 1
+            
+            else:
+                for _ in range(iters):
+                    deck.shuffle()
+                    opp = 3
+                    community = 5 - street
+                    draw = deck.peek(opp+community)
+                    opp_cards = draw[:opp]
+                    community_cards = board_cards + draw[opp:]
+
+                    our_hand = my_cards + community_cards
+                    opp_hand = opp_cards + community_cards
+
+                    our_hand_val = eval7.evaluate(our_hand)
+                    opp_hand_val = eval7.evaluate(opp_hand)
+
+                    if our_hand_val > opp_hand_val:
+                        # We won the round
+                        wins_wo_auction += 2
+                    if our_hand_val == opp_hand_val:
+                        # We tied the round
+                        wins_wo_auction += 1
+            
+        strength_w_auction = wins_w_auction / (2* iters)
+        strength_wo_auction = wins_wo_auction/ (2* iters)
+
+        return strength_w_auction, strength_wo_auction
 
 if __name__ == "__main__":
     run_bot(Player(), parse_args())
