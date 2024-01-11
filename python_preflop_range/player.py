@@ -139,7 +139,9 @@ class Player(Bot):
                 return BidAction(my_stack)
             if RaiseAction in legal_actions:
                 return RaiseAction(max_raise)
-            return CheckAction()
+            if CheckAction in legal_actions:
+                return CheckAction()
+            return CallAction()
         else:
             if BidAction in legal_actions:
                 return BidAction(2)
