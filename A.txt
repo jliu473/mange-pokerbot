@@ -280,7 +280,6 @@ new round
 new round
 new round
 new round
-[0, 0]
 new round
 new round
 new round
@@ -360,7 +359,6 @@ new round
 new round
 new round
 new round
-[0, 0]
 new round
 new round
 new round
@@ -630,7 +628,6 @@ new round
 new round
 new round
 new round
-[0, 0]
 new round
 new round
 new round
@@ -699,13 +696,11 @@ new round
 new round
 new round
 new round
-[0, 0]
 new round
 new round
 new round
 new round
 new round
-[0, 0]
 new round
 new round
 new round
@@ -764,7 +759,6 @@ new round
 new round
 new round
 new round
-[0, 0]
 new round
 new round
 new round
@@ -820,7 +814,6 @@ new round
 new round
 new round
 new round
-[0, 0]
 new round
 new round
 new round

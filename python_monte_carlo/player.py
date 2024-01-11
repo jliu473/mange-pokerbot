@@ -104,32 +104,71 @@ class Player(Bot):
             won_auction = True
         if len(my_cards) == 2 and street >= 3 and not BidAction in legal_actions:
             won_auction = False
+
         strength_w_auction, strength_wo_auction = self.calculate_strength(my_cards, street, board_cards, won_auction)
 
-        if street == 0: # preflop
-            pass
-        elif street == 3: # flop
-            pass
-        elif street == 4: # turn
-            pass
-        else: # river
-            pass
+        strength = 0
+        if won_auction == None:
+            strength = (strength_w_auction + strength_wo_auction) / 2
+        elif won_auction: 
+            strength = strength_w_auction
+        else:
+            strength = strength_wo_auction
 
-        # if (self.strength_wo_auction + self.strength_w_auction) / 2 >= 0.75:
-        #     if BidAction in legal_actions:
-        #         return BidAction(my_stack)
-        #     if RaiseAction in legal_actions:
-        #         return RaiseAction(max_raise)
-        #     if CheckAction in legal_actions:
-        #         return CheckAction()
-        #     return CallAction()
-        # else:
-        #     if BidAction in legal_actions:
-        #         return BidAction(2)
-        #     elif CheckAction in legal_actions:
-        #         return CheckAction()
-        #     return FoldAction()
+        pot = my_contribution + opp_contribution
 
+        # copy pasted
+        if BidAction in legal_actions:
+            max_bid_percentage = 0.40
+            min_bid_percentage = 0.15
+            bid_percentage = 0.75*(strength_w_auction - strength_wo_auction) + 1/100*random.randint(-500,500)
+            bid_percentage = max(min_bid_percentage, bid_percentage)
+            bid_percentage = min(max_bid_percentage, bid_percentage)
+            bid = int(pot*bid_percentage)
+            return BidAction(bid)
+
+        if street < 3:
+            raise_ammt = int(my_pip + continue_cost + 0.3*pot)
+            raise_cost = int(continue_cost + 0.3*pot)
+        else:
+            raise_ammt = int(my_pip + continue_cost + 0.5*pot)
+            raise_cost = int(continue_cost + 0.5*pot)
+        
+        if RaiseAction in legal_actions and raise_cost <= my_stack:
+            raise_ammt = max(min_raise, raise_ammt)
+            raise_ammt = min(max_raise, raise_ammt)
+            commit_action = RaiseAction(raise_ammt)
+        elif CallAction in legal_actions and continue_cost <= my_stack:
+            commit_action = CallAction()
+        else:
+            commit_action = FoldAction()
+        
+        if continue_cost > 0:
+            pot_odds = continue_cost/(continue_cost + pot)
+            
+            intimidation = 0
+            if continue_cost/pot > 0.33:
+                intimidation = -0.3
+            strength += intimidation         
+
+            if strength >= pot_odds:
+                if random.random() < strength and strength > 0.7:
+                    my_action = commit_action
+                else:
+                    my_action = CallAction()
+            if strength < pot_odds:
+                if strength < 0.10 and random.random() < 0.05 and RaiseAction in legal_actions:
+                    my_action = commit_action
+                else:
+                    my_action = FoldAction()
+        else:
+            if strength > 0.6 and random.random() < strength:
+                my_action = commit_action
+            else:
+                my_action = CheckAction()
+        
+        return my_action
+        # end copy paste
 
     def calculate_strength(self, my_cards, street, board_cards, won_auction=None, iters=100):
         deck = eval7.Deck()
