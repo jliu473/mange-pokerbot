@@ -1,0 +1,24 @@
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+if statement reached
+Traceback (most recent call last):
+  File "/Users/jackliu/Documents/mange-pokerbot/pot_odds_bot/player.py", line 289, in <module>
+    run_bot(Player(), parse_args())
+  File "/Users/jackliu/Documents/mange-pokerbot/pot_odds_bot/skeleton/runner.py", line 144, in run_bot
+    runner.run()
+  File "/Users/jackliu/Documents/mange-pokerbot/pot_odds_bot/skeleton/runner.py", line 119, in run
+    action = self.pokerbot.get_action(game_state, round_state, active)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jackliu/Documents/mange-pokerbot/pot_odds_bot/player.py", line 194, in get_action
+    bid_percentage = max(min_bid_percentage,bid)
+                                            ^^^
+UnboundLocalError: cannot access local variable 'bid' where it is not associated with a value
