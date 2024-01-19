@@ -30,9 +30,11 @@ class Player(Bot):
         self.opp_call_strengths = []
         self.opp_raise_threshold = 0.7
         # self.opp_call_threshold = 0.3
-        self.opp_behavior = {'passive': 0, 'aggresive': 0}
-        self.m_raise = 0
-        self.m_call = 0
+        self.opp_behavior = {'passive': 0.5, 'aggresive': 0.5}
+        self.m_raise = {0: 0, 3: 0, 4: 0, 5: 0}
+        self.m_call = {0: 0, 3: 0, 4: 0, 5: 0}
+        self.fold_threshold = 0.4
+        self.raise_threshold = 0.7
 
 
     def handle_new_round(self, game_state, round_state, active):
@@ -55,6 +57,9 @@ class Player(Bot):
 
         self.round_num = round_num
         self.opp_actions = {0: [], 3: [], 4: [], 5: []}
+        self.opp_hand_strength = 0.5
+
+        self.raised_previous = False
 
 
     def handle_round_over(self, game_state, terminal_state, active):
@@ -92,15 +97,15 @@ class Player(Bot):
                     
                     if RaiseAction in self.opp_actions[st]:
                         self.opp_raise_strengths.append(opp_strength)
-                        if opp_strength > 0.3:
-                            self.opp_behavior['aggresive'] += 1 - opp_strength
-                    else:
-                        if opp_strength > 0.6:
-                            self.opp_behavior['passive'] += opp_strength
-
                     if st == 0 and active == 1:
                         self.opp_call_strengths.append(opp_strength)
-
+                    
+                    if st <= 3:
+                        if RaiseAction in self.opp_actions[st] and opp_strength < 0.7:
+                            self.opp_behavior['aggresive'] += 1 - opp_strength
+                        elif RaiseAction not in self.opp_actions[st] and opp_strength > 0.6:
+                            self.opp_behavior['passive'] += opp_strength
+                    
         if self.round_num == self.num_rounds_learning:
             if len(self.opp_raise_strengths) > 0:
                 self.opp_raise_threshold = sum(self.opp_raise_strengths) / len(self.opp_raise_strengths) * 0.9
@@ -108,8 +113,10 @@ class Player(Bot):
             # if len(self.opp_call_strengths) > 0:
             #     self.opp_call_threshold = sum(self.opp_call_strengths) / len(self.opp_call_strengths)
             total_opp_behavior = self.opp_behavior['passive'] / (self.opp_behavior['aggresive'] + self.opp_behavior['passive'])
-            self.m_raise = 1.05 + 0.65 * total_opp_behavior
-            self.m_call = 0.4 + 0.55 * total_opp_behavior
+            m_raise_river = 1.05 + 0.65 * total_opp_behavior
+            m_call_river = 0.4 + 0.55 * total_opp_behavior
+            self.m_raise = {0: m_raise_river*0.316 + (1-0.316), 3: m_raise_river*0.666 + (1-0.666), 4: m_raise_river*0.796 + (1-0.796), 5: m_raise_river}
+            self.m_call = {0: m_call_river*0.316 + (1-0.316), 3: m_call_river*0.666 + (1-0.666), 4: m_call_river*0.796 + (1-0.796), 5: m_call_river}
 
 
     def get_action(self, game_state, round_state, active):
@@ -145,6 +152,7 @@ class Player(Bot):
            min_cost = min_raise - my_pip  # the cost of a minimum bet/raise
            max_cost = max_raise - my_pip  # the cost of a maximum bet/raise
         
+        # first N rounds spent learning opponent strategy
         if self.round_num <= self.num_rounds_learning: 
             if BidAction in legal_actions:
                 return BidAction(random.randint(1, 10))
@@ -154,8 +162,76 @@ class Player(Bot):
                 return CallAction()
             return CheckAction()
 
-        return FoldAction()
+        # calculate strength
+        won_auction = None
+        if len(my_cards) == 3:
+            won_auction = True
+        if len(my_cards) == 2 and street >= 3 and not BidAction in legal_actions:
+            won_auction = False
 
+        strength_w_auction, strength_wo_auction = self.calculate_strength(my_cards, street, board_cards, won_auction)
+
+        strength = 0
+        if won_auction == None:
+            strength = (strength_w_auction + strength_wo_auction) / 2
+        elif won_auction: 
+            strength = strength_w_auction
+        else:
+            strength = strength_wo_auction
+
+        # calculate expected pot
+        pot = my_contribution + opp_contribution
+
+        expected_pot = 0
+        if street == 0:
+            expected_pot = pot + 10
+        elif street == 3:
+            expected_pot = pot + 8
+        else:
+            expected_pot = pot + 4
+
+        # bid amount
+        if BidAction in legal_actions:
+            if strength_w_auction >= 0.99:
+                return BidAction(my_stack)
+            bid = (strength_w_auction - strength_wo_auction) / (1 - strength_w_auction) * pot
+            bid = int(bid)
+            bid = min(my_stack, bid)
+            bid = max(0, bid)
+            return BidAction(bid)
+
+        # opponent raised
+        if CallAction in legal_actions and continue_cost > 1:
+            self.opp_hand_strength *= self.m_raise[street]
+        # opponent called
+        if self.raised_previous and continue_cost == 0:
+            self.opp_hand_strength *= self.m_call[street]
+            self.raised_previous = False
+
+        # probability of winning
+        p = (strength - strength * self.opp_hand_strength) / (strength + self.opp_hand_strength - 2 * strength * self.opp_hand_strength)
+        
+        # raise amount
+        if RaiseAction in legal_actions:
+            raise_ammt = int((p + (random.randint(-5, 5) / 10)) * expected_pot)
+            raise_ammt = min(max_raise, raise_ammt)
+            raise_ammt = max(min_raise, raise_ammt)
+        
+        if continue_cost > 0:
+            if p >= self.raise_threshold and raise_ammt <= my_stack:
+                self.raised_previous = True
+                return RaiseAction(raise_ammt)
+                
+            elif p <= self.fold_threshold:
+                return FoldAction()
+            
+            return CallAction()
+        else:
+            if RaiseAction in legal_actions and p >= self.raise_threshold and random.random() < p and raise_ammt <= my_stack:
+                self.raised_previous = True
+                return RaiseAction(max(min_raise, int(raise_ammt * p)))
+            
+            return CheckAction()
 
 
     def calculate_strength(self, my_cards, street, board_cards, won_auction=None, iters=100):
