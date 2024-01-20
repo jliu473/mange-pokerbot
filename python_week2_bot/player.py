@@ -60,6 +60,7 @@ class Player(Bot):
         self.opp_hand_strength = 0.5
 
         self.raised_previous = False
+        #print("NEW ROUND", self.round_num)
 
 
     def handle_round_over(self, game_state, terminal_state, active):
@@ -115,8 +116,8 @@ class Player(Bot):
             total_opp_behavior = self.opp_behavior['passive'] / (self.opp_behavior['aggresive'] + self.opp_behavior['passive'])
             m_raise_river = 1.05 + 0.65 * total_opp_behavior
             m_call_river = 0.4 + 0.55 * total_opp_behavior
-            self.m_raise = {0: m_raise_river*0.316 + (1-0.316), 3: m_raise_river*0.666 + (1-0.666), 4: m_raise_river*0.796 + (1-0.796), 5: m_raise_river}
-            self.m_call = {0: m_call_river*0.316 + (1-0.316), 3: m_call_river*0.666 + (1-0.666), 4: m_call_river*0.796 + (1-0.796), 5: m_call_river}
+            self.m_raise = {0: m_raise_river*0.316 + 1.05*(1-0.316), 3: m_raise_river*0.666 + 1.05*(1-0.666), 4: m_raise_river*0.796 + 1.05*(1-0.796), 5: m_raise_river}
+            self.m_call = {0: m_call_river*0.316 + 0.95*(1-0.316), 3: m_call_river*0.666 + 0.95*(1-0.666), 4: m_call_river*0.796 + 0.95*(1-0.796), 5: m_call_river}
 
 
     def get_action(self, game_state, round_state, active):
@@ -207,7 +208,7 @@ class Player(Bot):
         if self.raised_previous and continue_cost == 0:
             self.opp_hand_strength *= self.m_call[street]
             self.raised_previous = False
-
+        #print(street, self.opp_hand_strength)
         # probability of winning
         p = (strength - strength * self.opp_hand_strength) / (strength + self.opp_hand_strength - 2 * strength * self.opp_hand_strength)
         
@@ -215,10 +216,10 @@ class Player(Bot):
         if RaiseAction in legal_actions:
             raise_ammt = int((p + (random.randint(-5, 5) / 10)) * expected_pot)
             raise_ammt = min(max_raise, raise_ammt)
-            raise_ammt = max(min_raise, raise_ammt)
+            #raise_ammt = max(min_raise, raise_ammt)
         
         if continue_cost > 0:
-            if p >= self.raise_threshold and raise_ammt <= my_stack:
+            if RaiseAction in legal_actions and p >= self.raise_threshold and min_raise <= raise_ammt <= my_stack:
                 self.raised_previous = True
                 return RaiseAction(raise_ammt)
                 
