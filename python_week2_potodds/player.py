@@ -220,14 +220,17 @@ class Player(Bot):
             #raise_ammt = max(min_raise, raise_ammt)
         
         if continue_cost > 0:
-            if RaiseAction in legal_actions and p >= self.raise_threshold and min_raise <= raise_ammt <= my_stack:
-                self.raised_previous = True
-                return RaiseAction(raise_ammt)
+            pot_odds = continue_cost / (continue_cost + expected_pot)
+
+            if p >= pot_odds:
+                if RaiseAction in legal_actions and p >= self.raise_threshold and min_raise <= raise_ammt <= my_stack:
+                    self.raised_previous = True
+                    return RaiseAction(raise_ammt)
                 
-            elif p <= self.fold_threshold:
+                return CallAction()
+                
+            else:
                 return FoldAction()
-            
-            return CallAction()
         else:
             if RaiseAction in legal_actions and p >= self.raise_threshold and random.random() < p and raise_ammt <= my_stack:
                 self.raised_previous = True
