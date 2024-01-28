@@ -26,8 +26,8 @@ class Player(Bot):
         Returns:
         Nothing.
         """
-        self.raise_threshold = 0.7
-        self.call_threshold = 0.6
+        self.raise_threshold = 0.8
+        self.call_threshold = 0.7
         self.bluff_threshold = 0.1
         self.raise_mult = 1
 

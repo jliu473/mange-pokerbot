@@ -30,6 +30,7 @@ class Player(Bot):
         self.call_threshold = 0.6
         self.bluff_threshold = 0.1
         self.raise_mult = 1
+        self.intimidation = 0
 
         with open("hand_strengths.pkl", "rb") as file:
             self.starting_strengths = pickle.load(file)
@@ -159,7 +160,7 @@ class Player(Bot):
             
             intimidation = 0
             if continue_cost/pot > 0.33:
-                intimidation = -0.3
+                intimidation = self.intimidation
             strength += intimidation         
 
             if strength >= pot_odds:

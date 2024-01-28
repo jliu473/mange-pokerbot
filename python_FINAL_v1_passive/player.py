@@ -29,7 +29,7 @@ class Player(Bot):
         self.raise_threshold = 0.7
         self.call_threshold = 0.6
         self.bluff_threshold = 0.1
-        self.raise_mult = 1
+        self.raise_mult = 0.7
 
         with open("hand_strengths.pkl", "rb") as file:
             self.starting_strengths = pickle.load(file)

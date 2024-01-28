@@ -28,7 +28,7 @@ class Player(Bot):
         """
         self.raise_threshold = 0.7
         self.call_threshold = 0.6
-        self.bluff_threshold = 0.1
+        self.bluff_threshold = 0
         self.raise_mult = 1
 
         with open("hand_strengths.pkl", "rb") as file:
@@ -168,8 +168,8 @@ class Player(Bot):
                 else:
                     my_action = CallAction()
             else:
-                if my_contribution == 1: # always min raise as small blind (if bad hand)
-                    return RaiseAction(min_raise)
+                # if my_contribution == 1: # always min raise as small blind (if bad hand)
+                #     return RaiseAction(min_raise)
                 # if continue_cost <= 2: # call if small blind min raises
                 #     return CallAction()
                 if strength < self.bluff_threshold and random.random() < self.bluff_threshold/2 and RaiseAction in legal_actions:
